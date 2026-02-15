@@ -11,6 +11,14 @@ node_modules/
 .env
 .token.json
 
+# Build output
+dist/
+
+# Database
+data/*.db
+data/*.db-journal
+data/*.db-wal
+
 # Generated files
 /lib/games/*
 /lib/publishers/*
