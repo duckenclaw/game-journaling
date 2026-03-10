@@ -10,9 +10,18 @@ export function parseWikiLink(raw: string): string {
 /**
  * Convert a display name to the project's filename slug format.
  * "Atomic Heart" → "Atomic-Heart"
+ * "1C/Cenega"   → "1C-Cenega"
+ *
+ * Replaces whitespace and filesystem-unsafe characters with hyphens,
+ * then collapses consecutive hyphens.
  */
 export function toSlug(name: string): string {
-  return name.trim().replace(/\s+/g, "-");
+  return name
+    .trim()
+    .replace(/[/\\:*?"<>|]+/g, "-") // filesystem-unsafe chars → hyphen
+    .replace(/\s+/g, "-")           // whitespace → hyphen
+    .replace(/-{2,}/g, "-")         // collapse consecutive hyphens
+    .replace(/^-|-$/g, "");         // trim leading/trailing hyphens
 }
 
 /**

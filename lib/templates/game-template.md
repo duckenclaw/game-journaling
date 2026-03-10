@@ -1,10 +1,11 @@
 ---
 class: game
 status: not started
-game-genre: 
-game-modes: 
-game-genre-tags: 
-player-perspective: 
+game-genre:
+game-modes:
+game-genre-tags:
+game-themes:
+player-perspective:
 platform: 
 engine: 
 developer:
