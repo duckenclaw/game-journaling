@@ -41,7 +41,11 @@ export function writeGameMarkdown(
   lines.push(...yamlArray("player-perspective", data.playerPerspectives));
 
   lines.push(`platform: ${options.platform ?? ""}`);
-  lines.push(`engine: ${data.engine ?? ""}`);
+
+  // Quote engine if it contains special YAML characters (colon, etc.)
+  const engineValue = data.engine ?? "";
+  const needsQuotes = engineValue.includes(":") || engineValue.includes("#") || engineValue.includes("[");
+  lines.push(`engine: ${needsQuotes && engineValue ? `"${engineValue}"` : engineValue}`);
 
   // Wiki-link arrays for developer/publisher (slugified for filename matching)
   lines.push(...yamlWikiLinkArray("developer", data.developers.map(toSlug)));

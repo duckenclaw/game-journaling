@@ -269,8 +269,9 @@ function resolveGameData(
   involvedCompanyMap: Map<number, IgdbInvolvedCompany>,
 ): ResolvedGameData {
   // Resolve involved companies into developer/publisher names
-  const developers: string[] = [];
-  const publishers: string[] = [];
+  // Use Sets to avoid duplicates (same company can appear multiple times)
+  const developerSet = new Set<string>();
+  const publisherSet = new Set<string>();
 
   for (const icId of igdbGame.involved_companies ?? []) {
     const ic = involvedCompanyMap.get(icId);
@@ -278,9 +279,12 @@ function resolveGameData(
     const companyName = companyMap.get(ic.company);
     if (!companyName) continue;
 
-    if (ic.developer) developers.push(companyName);
-    if (ic.publisher) publishers.push(companyName);
+    if (ic.developer) developerSet.add(companyName);
+    if (ic.publisher) publisherSet.add(companyName);
   }
+
+  const developers = [...developerSet];
+  const publishers = [...publisherSet];
 
   // Format release date from unix timestamp
   let releaseDate: string | null = null;

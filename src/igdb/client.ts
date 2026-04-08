@@ -63,6 +63,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Sanitize a name to remove problematic characters for YAML.
+ * Removes quotes and other special characters that cause YAML parsing issues.
+ */
+function sanitizeName(name: string): string {
+  return name
+    .replace(/["'`]/g, "")  // remove quotes
+    .replace(/[.]/g, "")    // remove periods
+    .trim();
+}
+
 // ──────────────────────────────────────────────
 // Game search
 // ──────────────────────────────────────────────
@@ -103,8 +114,9 @@ export async function searchGame(
 /**
  * Helper to batch-fetch entities by ID array.
  * Splits into chunks of BATCH_SIZE if needed.
+ * Sanitizes name fields to remove problematic characters.
  */
-async function batchFetchById<T>(
+async function batchFetchById<T extends { name: string }>(
   endpoint: string,
   ids: number[],
   fields: string = "name",
@@ -121,7 +133,8 @@ async function batchFetchById<T>(
       endpoint,
       `fields ${fields}; where id = (${idList}); limit ${chunk.length};`,
     );
-    results.push(...items);
+    // Sanitize names in the results
+    results.push(...items.map(item => ({ ...item, name: sanitizeName(item.name) })));
   }
 
   return results;
@@ -162,9 +175,21 @@ export async function fetchCompanies(ids: number[]): Promise<IgdbCompany[]> {
 export async function fetchInvolvedCompanies(
   ids: number[],
 ): Promise<IgdbInvolvedCompany[]> {
-  return batchFetchById<IgdbInvolvedCompany>(
-    "involved_companies",
-    ids,
-    "company,developer,publisher",
-  );
+  // IgdbInvolvedCompany doesn't have a name field, so we can't use the generic helper
+  if (ids.length === 0) return [];
+
+  const unique = [...new Set(ids)];
+  const results: IgdbInvolvedCompany[] = [];
+
+  for (let i = 0; i < unique.length; i += BATCH_SIZE) {
+    const chunk = unique.slice(i, i + BATCH_SIZE);
+    const idList = chunk.join(",");
+    const items = await query<IgdbInvolvedCompany>(
+      "involved_companies",
+      `fields company,developer,publisher; where id = (${idList}); limit ${chunk.length};`,
+    );
+    results.push(...items);
+  }
+
+  return results;
 }
