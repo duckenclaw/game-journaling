@@ -17,6 +17,8 @@ export interface IgdbGame {
   storyline?: string;
   /** Unix timestamp (seconds) */
   first_release_date?: number;
+  /** Game type: 0 main game, 1 DLC, 2 expansion, 3 bundle, 13 pack, etc. */
+  game_type?: number;
 }
 
 export interface IgdbInvolvedCompany {

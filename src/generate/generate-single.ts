@@ -4,7 +4,7 @@ import path from "node:path";
 import { toSlug } from "../sync/wiki-link.js";
 import { syncAll } from "../sync/sync-engine.js";
 import {
-  searchGame,
+  searchGames,
   fetchGenres,
   fetchGameModes,
   fetchPlayerPerspectives,
@@ -24,6 +24,7 @@ import {
   writeStudioMarkdown,
   writePublisherMarkdown,
 } from "./markdown-writer.js";
+import { selectFromList } from "./select-prompt.js";
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "data/game-journaling.db";
 const CSV_PATH = path.resolve("lib/games.csv");
@@ -48,7 +49,23 @@ export async function generateSingle(gameName: string): Promise<void> {
 
   // ── Step 2: Search IGDB ───────────────────────
   console.log("\n  Searching IGDB...");
-  const igdbGame = await searchGame(gameName.trim());
+  const matches = await searchGames(gameName.trim());
+
+  let igdbGame: IgdbGame | null;
+  if (matches.length <= 1) {
+    igdbGame = matches[0] ?? null;
+  } else {
+    console.log(`  ${matches.length} results found.\n`);
+    igdbGame = await selectFromList(
+      matches,
+      formatChoice,
+      { message: "  Use ↑/↓ to choose a game, Enter to confirm, Esc to cancel:" },
+    );
+    if (!igdbGame) {
+      console.log("\n  Cancelled. No files written.\n");
+      return;
+    }
+  }
 
   if (!igdbGame) {
     console.log(`  [warn] "${gameName}" not found on IGDB. Writing empty template.`);
@@ -154,6 +171,38 @@ export async function generateSingle(gameName: string): Promise<void> {
 // ──────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────
+
+/** IGDB game_type IDs → short human labels. */
+const GAME_TYPE_LABELS: Record<number, string> = {
+  0: "Main game",
+  1: "DLC",
+  2: "Expansion",
+  3: "Bundle",
+  4: "Standalone expansion",
+  5: "Mod",
+  6: "Episode",
+  7: "Season",
+  8: "Remake",
+  9: "Remaster",
+  10: "Expanded game",
+  11: "Port",
+  12: "Fork",
+  13: "Pack",
+  14: "Update",
+};
+
+function gameTypeLabel(gameType: number | undefined): string {
+  if (gameType == null) return "Game";
+  return GAME_TYPE_LABELS[gameType] ?? "Game";
+}
+
+/** Format an IGDB search result as `Name  [Type · Year]` for the picker. */
+function formatChoice(game: IgdbGame): string {
+  const year = game.first_release_date
+    ? new Date(game.first_release_date * 1000).getUTCFullYear().toString()
+    : "—";
+  return `${game.name}  [${gameTypeLabel(game.game_type)} · ${year}]`;
+}
 
 function syncAndReport(): void {
   console.log("\n  Syncing database...");

@@ -90,7 +90,23 @@ const GAME_FIELDS = [
   "summary",
   "storyline",
   "first_release_date",
+  "game_type",
 ].join(",");
+
+/**
+ * Search for games by name. Returns up to `limit` matches, best first.
+ */
+export async function searchGames(
+  name: string,
+  limit = 10,
+): Promise<IgdbGame[]> {
+  // Escape double quotes in game name
+  const escaped = name.replace(/"/g, '\\"');
+  return query<IgdbGame>(
+    "games",
+    `search "${escaped}"; fields ${GAME_FIELDS}; limit ${limit};`,
+  );
+}
 
 /**
  * Search for a game by name. Returns the best match or null.
@@ -98,12 +114,7 @@ const GAME_FIELDS = [
 export async function searchGame(
   name: string,
 ): Promise<IgdbGame | null> {
-  // Escape double quotes in game name
-  const escaped = name.replace(/"/g, '\\"');
-  const results = await query<IgdbGame>(
-    "games",
-    `search "${escaped}"; fields ${GAME_FIELDS}; limit 1;`,
-  );
+  const results = await searchGames(name, 1);
   return results[0] ?? null;
 }
 

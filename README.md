@@ -19,16 +19,6 @@ A TypeScript-powered knowledge base for game design journaling, built on interli
 - Game mechanics pages interlinked across titles (e.g., a "Horse Riding" page linked from both Witcher 3 and Red Dead Redemption 2)
 - Web frontend (Docusaurus or similar) for publishing beyond Obsidian
 
-## Tech Stack
-
-| Component       | Technology           | Status     |
-|-----------------|----------------------|------------|
-| Language        | TypeScript           | Planned    |
-| Runtime         | Node.js              | Planned    |
-| Game Data API   | IGDB via Twitch OAuth| Configured |
-| Vault / Editor  | Obsidian             | Active     |
-| Obsidian Plugins| Dataview, Icon Folder| Active     |
-| Web Frontend    | TBD (Docusaurus, etc.)| Future    |
 
 ## Project Structure
 
