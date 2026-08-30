@@ -17,8 +17,23 @@ export interface IgdbGame {
   storyline?: string;
   /** Unix timestamp (seconds) */
   first_release_date?: number;
+  /** Expanded via `release_dates.human, release_dates.date` in the games query. */
+  release_dates?: IgdbReleaseDate[];
   /** Game type: 0 main game, 1 DLC, 2 expansion, 3 bundle, 13 pack, etc. */
   game_type?: number;
+}
+
+/**
+ * A per-platform/region release date. IGDB stores a precise-looking unix
+ * timestamp even when only a year is known (e.g. "2026" becomes 31 Dec 2026),
+ * so `human` is the only reliable signal of how precise the date actually is.
+ */
+export interface IgdbReleaseDate {
+  id: number;
+  /** Unix timestamp (seconds) */
+  date?: number;
+  /** e.g. "Nov 19, 2026", "Q4 2026", "2026", "TBD" */
+  human?: string;
 }
 
 export interface IgdbInvolvedCompany {
@@ -67,6 +82,9 @@ export interface IgdbGameEngine {
 // Resolved game data (after entity ID lookups)
 // ──────────────────────────────────────────────
 
+/** How much of `releaseDate` is actually known. */
+export type ReleasePrecision = "day" | "month" | "quarter" | "year" | "tba";
+
 export interface ResolvedGameData {
   igdbId: number;
   name: string;
@@ -81,4 +99,6 @@ export interface ResolvedGameData {
   summary: string | null;
   storyline: string | null;
   releaseDate: string | null; // "YYYY-MM-DD"
+  releasePrecision: ReleasePrecision | null;
+  releaseHuman: string | null; // e.g. "Q4 2026"
 }

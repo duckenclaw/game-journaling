@@ -4,6 +4,8 @@ import path from "node:path";
 import { parseCsvFile } from "../sync/csv-parser.js";
 import { toSlug } from "../sync/wiki-link.js";
 import { syncAll } from "../sync/sync-engine.js";
+import { resolveReleasePrecision } from "../igdb/release-precision.js";
+import { syncCalendarQuietly } from "../calendar/sync-calendar.js";
 import {
   searchGame,
   fetchGenres,
@@ -235,6 +237,9 @@ export async function generateAll(): Promise<void> {
   console.log("Syncing to database...\n");
   const report = syncAll(DATABASE_URL);
 
+  // ── Phase 7: Calendar events for upcoming releases ──
+  syncCalendarQuietly(searchResults.map((r) => r.slug));
+
   console.log("\n=== Generation Complete ===\n");
   console.log(`  Games written:    ${gamesWritten}`);
   console.log(`  Studios written:  ${studioGames.size}`);
@@ -293,6 +298,8 @@ function resolveGameData(
     releaseDate = d.toISOString().split("T")[0];
   }
 
+  const { precision, human } = resolveReleasePrecision(igdbGame);
+
   return {
     igdbId: igdbGame.id,
     name: igdbGame.name,
@@ -309,6 +316,8 @@ function resolveGameData(
     summary: igdbGame.summary ?? null,
     storyline: igdbGame.storyline ?? null,
     releaseDate,
+    releasePrecision: precision,
+    releaseHuman: human,
   };
 }
 

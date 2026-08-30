@@ -10,6 +10,9 @@ switch (command) {
   case "generate":
     await import("./generate/index.js");
     break;
+  case "calendar":
+    await import("./calendar/index.js");
+    break;
   default:
     console.log("Game Journaling CLI");
     console.log();
@@ -17,11 +20,13 @@ switch (command) {
     console.log("  sync                          Synchronize markdown files to the SQLite database");
     console.log("  generate                      Generate all markdown files from CSV + IGDB");
     console.log('  generate single "Game Name"   Generate a single game from IGDB');
+    console.log("  calendar                      Add upcoming game releases to Apple Calendar");
     console.log();
     console.log("Usage:");
     console.log("  npm run sync                         Run sync directly");
     console.log("  npm run generate                     Generate all game files");
     console.log('  npm run generate:single "Game Name"  Generate a single game');
+    console.log("  npm run calendar                     Sync upcoming releases to Calendar.app");
     console.log("  npm run dev sync                     Run via CLI router");
     break;
 }

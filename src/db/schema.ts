@@ -15,6 +15,8 @@ export const games = sqliteTable(
     platform: text("platform"),
     engine: text("engine"),
     release: text("release"), // YYYY-MM-DD
+    releasePrecision: text("release_precision"), // day | month | quarter | year | tba
+    releaseHuman: text("release_human"), // e.g. "Q4 2026"
     director: text("director"), // designer slug, e.g. "Robert-Bagratuni"
 
     // Frontmatter arrays (stored as JSON text)
