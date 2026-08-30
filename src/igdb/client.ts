@@ -90,6 +90,8 @@ const GAME_FIELDS = [
   "summary",
   "storyline",
   "first_release_date",
+  "release_dates.date",
+  "release_dates.human",
   "game_type",
 ].join(",");
 
@@ -106,6 +108,18 @@ export async function searchGames(
     "games",
     `search "${escaped}"; fields ${GAME_FIELDS}; limit ${limit};`,
   );
+}
+
+/**
+ * Fetch a specific game by its IGDB id. Lets callers bypass fuzzy search
+ * when they already know exactly which entry they want.
+ */
+export async function fetchGameById(id: number): Promise<IgdbGame | null> {
+  const results = await query<IgdbGame>(
+    "games",
+    `fields ${GAME_FIELDS}; where id = ${id}; limit 1;`,
+  );
+  return results[0] ?? null;
 }
 
 /**

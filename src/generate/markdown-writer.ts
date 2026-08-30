@@ -56,6 +56,8 @@ export function writeGameMarkdown(
 
   // Release date
   lines.push(`release: ${data.releaseDate ?? "YYYY-MM-DD"}`);
+  lines.push(`release-precision: ${data.releasePrecision ?? ""}`);
+  lines.push(`release-human: ${data.releaseHuman ? `"${data.releaseHuman}"` : ""}`);
 
   lines.push("---");
 

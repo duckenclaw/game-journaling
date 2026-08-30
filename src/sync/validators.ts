@@ -86,6 +86,20 @@ export const gameFrontmatterSchema = z.object({
       if (trimmed === "YYYY-MM-DD" || trimmed === "") return null;
       return trimmed;
     }),
+  // How precise the release date actually is. IGDB stores "2026" as
+  // 31 Dec 2026, so without this a placeholder is indistinguishable
+  // from a confirmed date.
+  "release-precision": z
+    .enum(["day", "month", "quarter", "year", "tba"])
+    .optional()
+    .nullable()
+    .catch(null)
+    .transform((v) => v ?? null),
+  "release-human": z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => v?.trim() || null),
 });
 
 export const studioFrontmatterSchema = z.object({

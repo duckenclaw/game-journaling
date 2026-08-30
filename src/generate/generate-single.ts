@@ -5,6 +5,7 @@ import { toSlug } from "../sync/wiki-link.js";
 import { syncAll } from "../sync/sync-engine.js";
 import {
   searchGames,
+  fetchGameById,
   fetchGenres,
   fetchGameModes,
   fetchPlayerPerspectives,
@@ -25,6 +26,8 @@ import {
   writePublisherMarkdown,
 } from "./markdown-writer.js";
 import { selectFromList } from "./select-prompt.js";
+import { resolveReleasePrecision } from "../igdb/release-precision.js";
+import { syncCalendarQuietly } from "../calendar/sync-calendar.js";
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "data/game-journaling.db";
 const CSV_PATH = path.resolve("lib/games.csv");
@@ -33,7 +36,7 @@ const CSV_PATH = path.resolve("lib/games.csv");
  * Generate markdown for a single game.
  * Adds to CSV if not present. Always overwrites the game .md file.
  */
-export async function generateSingle(gameName: string): Promise<void> {
+export async function generateSingle(gameName: string, igdbId?: number): Promise<void> {
   if (!gameName || gameName.trim() === "") {
     console.error("Error: Please provide a game name.");
     console.log('Usage: npm run generate:single "Game Name"');
@@ -47,23 +50,33 @@ export async function generateSingle(gameName: string): Promise<void> {
   // ── Step 1: Check/update CSV ──────────────────
   ensureInCsv(gameName.trim(), slug);
 
-  // ── Step 2: Search IGDB ───────────────────────
-  console.log("\n  Searching IGDB...");
-  const matches = await searchGames(gameName.trim());
-
+  // ── Step 2: Resolve the IGDB entry ────────────
   let igdbGame: IgdbGame | null;
-  if (matches.length <= 1) {
-    igdbGame = matches[0] ?? null;
-  } else {
-    console.log(`  ${matches.length} results found.\n`);
-    igdbGame = await selectFromList(
-      matches,
-      formatChoice,
-      { message: "  Use ↑/↓ to choose a game, Enter to confirm, Esc to cancel:" },
-    );
+
+  if (igdbId != null) {
+    console.log(`\n  Fetching IGDB id ${igdbId}...`);
+    igdbGame = await fetchGameById(igdbId);
     if (!igdbGame) {
-      console.log("\n  Cancelled. No files written.\n");
-      return;
+      console.error(`  Error: no IGDB game with id ${igdbId}.`);
+      process.exit(1);
+    }
+  } else {
+    console.log("\n  Searching IGDB...");
+    const matches = await searchGames(gameName.trim());
+
+    if (matches.length <= 1) {
+      igdbGame = matches[0] ?? null;
+    } else {
+      console.log(`  ${matches.length} results found.\n`);
+      igdbGame = await selectFromList(
+        matches,
+        formatChoice,
+        { message: "  Use ↑/↓ to choose a game, Enter to confirm, Esc to cancel:" },
+      );
+      if (!igdbGame) {
+        console.log("\n  Cancelled. No files written.\n");
+        return;
+      }
     }
   }
 
@@ -87,13 +100,15 @@ export async function generateSingle(gameName: string): Promise<void> {
       summary: null,
       storyline: null,
       releaseDate: null,
+      releasePrecision: null,
+      releaseHuman: null,
     }, {
       status: csvData?.status ?? "not started",
       platform: csvData?.platform ?? "PC",
     });
 
     console.log(`\n  Wrote: lib/games/${slug}.md (empty template)`);
-    syncAndReport();
+    syncAndReport(slug);
     return;
   }
 
@@ -165,7 +180,7 @@ export async function generateSingle(gameName: string): Promise<void> {
   }
 
   // ── Step 5: Sync DB ───────────────────────────
-  syncAndReport();
+  syncAndReport(slug);
 }
 
 // ──────────────────────────────────────────────
@@ -204,10 +219,11 @@ function formatChoice(game: IgdbGame): string {
   return `${game.name}  [${gameTypeLabel(game.game_type)} · ${year}]`;
 }
 
-function syncAndReport(): void {
+function syncAndReport(slug: string): void {
   console.log("\n  Syncing database...");
   const report = syncAll(DATABASE_URL);
   console.log(`  DB: ${report.created} created, ${report.updated} updated\n`);
+  syncCalendarQuietly([slug]);
 }
 
 /**
@@ -317,6 +333,8 @@ function resolveGameData(
   const resolveNames = (ids: number[] | undefined, map: Map<number, string>) =>
     ids?.map((id) => map.get(id)).filter((n): n is string => n != null) ?? [];
 
+  const { precision, human } = resolveReleasePrecision(igdbGame);
+
   return {
     igdbId: igdbGame.id,
     name: igdbGame.name,
@@ -333,5 +351,7 @@ function resolveGameData(
     summary: igdbGame.summary ?? null,
     storyline: igdbGame.storyline ?? null,
     releaseDate,
+    releasePrecision: precision,
+    releaseHuman: human,
   };
 }
